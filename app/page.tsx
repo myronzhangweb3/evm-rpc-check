@@ -1,101 +1,144 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from 'react';
+import { checkRpcMethods, rpcMethods } from '../utils/rpcChecker';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [rpcUrl, setRpcUrl] = useState('');
+  const [methods, setMethods] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedHistory = localStorage.getItem('rpcHistory');
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('rpcHistory', JSON.stringify(history));
+    }
+  }, [history]);
+
+  const updateConsole = (message: string) => {
+    setConsoleOutput((prevOutput) => [...prevOutput, message]);
+  };
+
+  const handleCheckMethods = async () => {
+    setLoading(true);
+    let availableMethods: string[] = [];
+    try {
+      availableMethods = await checkRpcMethods(rpcUrl, updateConsole);
+    } catch (error) {
+      console.error('Error checking RPC methods:', error);
+      updateConsole(`Error checking RPC methods: ${error}`);
+    } finally {
+      setMethods(availableMethods as string[]);
+      if (rpcUrl && !history.includes(rpcUrl)) {
+        setHistory((prevHistory) => [...prevHistory, rpcUrl]);
+      }
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>EVM RPC Method Checker</h1>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          list="rpc-history"
+          value={rpcUrl}
+          onChange={(e) => setRpcUrl(e.target.value)}
+          placeholder="Enter RPC URL"
+          style={{
+            padding: '10px',
+            width: '100%',
+            maxWidth: '300px',
+            borderRadius: '5px',
+            border: '1px solid #ccc',
+            marginBottom: '10px',
+            marginRight: '10px',
+            color: 'black',
+            height: '45px'
+          }}
+        />
+        <datalist id="rpc-history">
+          {history.map((url, index) => (
+            <option key={index} value={url} />
+          ))}
+        </datalist>
+        <button
+          onClick={handleCheckMethods}
+          disabled={loading || !rpcUrl}
+          style={{
+            height: '45px',
+            padding: '0 20px',
+            borderRadius: '5px',
+            border: 'none',
+            backgroundColor: loading || !rpcUrl ? '#ccc' : '#007BFF',
+            color: '#fff',
+            cursor: loading || !rpcUrl ? 'not-allowed' : 'pointer',
+            width: '100%',
+            maxWidth: '200px'
+          }}
+        >
+          {loading ? 'Checking...' : 'Check RPC Methods'}
+        </button>
+      </div>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', color: '#007BFF' }}>Loading...</div>
+            <div style={{ marginTop: '10px' }}>
+              <div className="spinner" style={{
+                width: '50px',
+                height: '50px',
+                border: '5px solid #f3f3f3',
+                borderTop: '5px solid #007BFF',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : (
+        <div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '10px', textAlign: 'left' }}>Method</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '10px', textAlign: 'left' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rpcMethods.map((method: string) => (
+                <tr key={method}>
+                  <td style={{ borderBottom: '1px solid #ddd', padding: '10px' }}>{method}</td>
+                  <td style={{ borderBottom: '1px solid #ddd', padding: '10px' }}>
+                    <span style={{ color: methods.includes(method) ? 'green' : 'red' }}>●</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div>
+        <div style={{ marginTop: '20px' }}>
+          <h2>Console Output</h2>
+          <pre style={{ backgroundColor: '#f8f8f8', padding: '10px', borderRadius: '5px', overflowY: 'auto' }}>
+            {consoleOutput.map((line, index) => (
+              <div key={index}>{line}</div>
+            ))}
+          </pre>
+        </div>
+      </div>
     </div>
   );
 }
