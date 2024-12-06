@@ -31,6 +31,7 @@ export default function Home() {
 
   const handleCheckMethods = async () => {
     setLoading(true);
+    setConsoleOutput([]);
     let availableMethods: string[] = [];
     try {
       availableMethods = await checkRpcMethods(rpcUrl, updateConsole);
