@@ -77,7 +77,7 @@ export const checkRpcMethods = async (rpcUrl, updateConsole) => {
   blockNumber = parseInt(blockNumber.data.result, 16);
   while (blockNumber >= 0) {
     updateConsole(`query txhash from blockNumber: ${blockNumber}`);
-    block = await rpcRequest("eth_getBlockByNumber", [ethers.toBeHex(blockNumber), true]);
+    block = await rpcRequest("eth_getBlockByNumber", ["0x"+blockNumber.toString(16), true]);
     if (block.data.result.transactions.length > 0) {
       blockHash = block.data.result.hash;
       txHash = block.data.result.transactions[0].hash;
